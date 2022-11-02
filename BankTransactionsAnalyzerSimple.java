@@ -5,27 +5,47 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 public class BankTransactionsAnalyzerSimple {
     private static final String RESOURCES = "src/main/resources/";
 
     public static void main(String[] args) throws IOException {
-        final Path path = Paths.get(RESOURCES + args[0]);
+        final BankStatementCSVParser bankStatementParser = new BankStatementCSVParser();
+        
+        final String filename = args[0];
+        final Path path = Paths.get(RESOURCES + filename);
         final List<String> lines = Files.readAllLines(path);
-        final DateTimeFormatter DATE_PATTERN = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        
+        final List<BankTransaction> bankTransactions = bankStatementParser.parseLinesFromCSV(lines);
+
+        System.out.println("The total for all transactions is " +
+            calculateTotalAmount(bankTransactions));
+
+        System.out.println("Transactions in January: " +
+            selectInMonth(bankTransactions, Month.JANUARY));
+    }
+
+    public static double calculateTotalAmount(final List<BankTransaction> bankTransactions) {
         double total = 0d;
 
-        for (final String line: lines) {
-            final String[] columns = line.split(",");
-            final LocalDate date = LocalDate.parse(columns[0], DATE_PATTERN);
+        for (final BankTransaction bankTransaction : bankTransactions) {
+            total += bankTransaction.getAmount();
+        }
 
-            if (date.getMonth() == Month.JANUARY) {
-                final double amount = Double.parseDouble(columns[1]);
-                total += amount;
+        return total;
+    }
+
+    public static List<BankTransaction> selectInMonth(final List<BankTransaction> bankTransactions, final Month month) {
+        final List<BankTransaction> bankTransactionsInMonth = new ArrayList<>();
+
+        for (final BankTransaction bankTransaction : bankTransactions) {
+            if (bankTransaction.getDate().getMonth() == month) {
+                bankTransactionsInMonth.add(bankTransaction);
             }
         }
 
-        System.out.println("The total for all transactions in January is " + total);
+        return bankTransactionsInMonth;
     }
 }
